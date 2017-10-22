@@ -9,7 +9,8 @@
 import Foundation
 
 @objc public protocol PhotoSlideViewerSource {
-    func loadPhoto(photoObject: AnyObject, titleCallBack: (_ title: String?, _ subtitle: String?) -> Void, imageCallBack: (_ image: UIImage?) -> Void)
+    func loadPhoto(photoObject: AnyObject, titleCallBack: (_ title: String?, _ subtitle: String?) -> Void, videoCallBack: (_ isVideo: Bool) -> Void, imageCallBack: (_ image: UIImage?) -> Void)
+    func playVideo(photoObject: AnyObject)
 }
 
 @objc public class PhotoSlideViewer: UIView {
@@ -29,10 +30,12 @@ import Foundation
         
         photoZoomViewBack = PhotoZoomView(frame: self.bounds)
         photoZoomViewBack!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        photoZoomViewBack!.videoPlayButton!.addTarget(self, action: #selector(playVideo), for: UIControlEvents.touchUpInside)
         self.addSubview(photoZoomViewBack!);
         
         photoZoomViewFront = PhotoZoomView(frame: self.bounds)
         photoZoomViewFront!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        photoZoomViewFront!.videoPlayButton!.addTarget(self, action: #selector(playVideo), for: UIControlEvents.touchUpInside)
         self.addSubview(photoZoomViewFront!);
         
         let swipeLeftGestureRecognizer = UISwipeGestureRecognizer(target: self, action: #selector(self.handleSwipeLeftGestureOnImageView(swipeGesture:)))
@@ -42,6 +45,11 @@ import Foundation
         let swipeRightGestureRecognizer = UISwipeGestureRecognizer(target: self, action: #selector(self.handleSwipeRightGestureOnImageView(swipeGesture:)))
         swipeRightGestureRecognizer.direction = UISwipeGestureRecognizerDirection.right
         self.addGestureRecognizer(swipeRightGestureRecognizer);
+    }
+    
+    func playVideo() {
+        let photo = photos?[Int(photoZoomViewFront!.photoPosition)];
+        photoSource?.playVideo(photoObject: photo!)
     }
     
     func handleSwipeLeftGestureOnImageView(swipeGesture: UISwipeGestureRecognizer) {
@@ -98,11 +106,14 @@ import Foundation
             photoZoomView.imageView?.image = nil
             photoZoomView.spinner?.startAnimating()
             photoSource?.loadPhoto(photoObject: photo!,
-                                   titleCallBack: { (title: String?, subtitle: String?) in
+                               titleCallBack: { (title: String?, subtitle: String?) in
                                     photoZoomView.titleLabel?.text = title
                                     photoZoomView.subTitleLabel?.text = subtitle
             },
-                                   imageCallBack: { (image : UIImage?) in
+                               videoCallBack: { (isVideo: Bool) in
+                                    photoZoomView.videoPlayButton?.isHidden = !isVideo
+            },
+                               imageCallBack: { (image : UIImage?) in
                                     photoZoomView.imageView?.image = image
                                     photoZoomView.spinner?.stopAnimating()
             })
